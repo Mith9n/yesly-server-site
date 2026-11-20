@@ -1,0 +1,24 @@
+{
+  "name": "yesly-server",
+  "version": "1.0.0",
+  "description": "Yesly wedding marketplace REST API",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "start": "node index.js",
+    "seed:admin": "node seed-admin.js",
+    "seed:demo": "node seed-demo.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.9.0",
+    "stripe": "^18.5.0"
+  }
+}
