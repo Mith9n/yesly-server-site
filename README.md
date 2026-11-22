@@ -4,7 +4,7 @@ Express.js + MongoDB API for **Yesly**, a wedding planning marketplace where cou
 request bookings from curated vendors, vendors manage services and subscriptions, and
 admins moderate the platform.
 
-This repository is the **API server**. The Next.js client lives in `yesly-client`.
+This repository is the **API server**. The Next.js client lives in [yesly-client-site](https://github.com/Mith9n/yesly-client-site).
 
 ## Features
 
@@ -52,11 +52,16 @@ PORT=5000
 MONGODB_URI=mongodb+srv://user:password@cluster/...
 AUTH_DB_NAME=YESLY-Databse
 CLIENT_URL=http://localhost:3000
+PUBLIC_API_URL=http://localhost:5000
 JWT_SECRET=your-long-random-secret
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 IMGBB_API_KEY=...
+SHOWCASE_PASSWORD=      # only needed for node seed-showcase.js
 ```
+
+`NODE_ENV=development` lets the API start without `JWT_SECRET` (it generates an
+ephemeral key); production requires a real `JWT_SECRET` or the server exits.
 
 `AUTH_DB_NAME` must match the client's database because the API reads Better Auth sessions
 from it.
@@ -92,6 +97,13 @@ npm run seed:demo
 
 The demo catalog only seeds when the `service` collection is empty.
 
+Full showcase catalog (five vendor accounts, seventeen published listings). It creates real
+Better Auth accounts, so set `SHOWCASE_PASSWORD` first:
+
+```bash
+SHOWCASE_PASSWORD=choose-a-password node seed-showcase.js
+```
+
 ## API Overview
 
 ### Auth
@@ -101,17 +113,30 @@ The demo catalog only seeds when the `service` collection is empty.
 | GET | `/api/auth/me` | Authenticated |
 | PATCH | `/api/auth/profile` | Authenticated (name, image, businessName only) |
 
+### Uploads
+| Method | Path | Access |
+| --- | --- | --- |
+| POST | `/api/uploads` | Authenticated (service and profile images) |
+| POST | `/api/uploads/avatar` | Public, rate limited (sign-up avatar, max 2 MB) |
+
 ### Services
 | Method | Path | Access |
 | --- | --- | --- |
-| GET | `/api/services` | Public (`search`, `category`, `location`, `sort`, `page`, `limit`) |
+| GET | `/api/services` | Public (`search`, `category`, `location`, `vendor`, `sort`, `page`, `limit`) |
 | GET | `/api/services/featured` | Public (6 latest approved/active) |
-| GET | `/api/services/:id` | Authenticated; non-public listings visible to owner/admin only |
+| GET | `/api/services/categories` | Public (canonical category list) |
+| GET | `/api/services/:id` | Public for approved + active listings; owners/admins also see their own pending ones |
 | GET | `/api/services/vendor/mine` | Vendor |
 | GET | `/api/services/vendor/stats` | Vendor |
 | POST | `/api/services` | Vendor (free limit enforced) |
 | PATCH | `/api/services/:id` | Owning vendor |
 | DELETE | `/api/services/:id` | Owning vendor |
+
+### Vendors
+| Method | Path | Access |
+| --- | --- | --- |
+| GET | `/api/vendors` | Public (`category`, `search`, `page`, `limit`) |
+| GET | `/api/vendors/:id` | Public (vendor profile + published listings) |
 
 ### Bookings
 | Method | Path | Access |
@@ -137,6 +162,10 @@ The demo catalog only seeds when the `service` collection is empty.
 | GET | `/api/payments/status/:sessionId` | Owning vendor (read-only) |
 | POST | `/api/payments/webhook` | Stripe signature only |
 
+The deployed client creates its Checkout session in its own Next.js route handler
+(`/api/checkout_sessions` on the client host); this API endpoint remains available for
+API-only clients and shares the same webhook for activation.
+
 ## Payment Security
 
 - Premium is activated **only** inside the signature-verified
@@ -151,3 +180,13 @@ Local webhook testing:
 ```bash
 stripe listen --forward-to localhost:5000/api/payments/webhook
 ```
+
+## Live Website
+
+- API — https://yesly-server-site.vercel.app (health check: `/api/health`)
+- Client — https://yesly-client-site.vercel.app
+
+## Repositories
+
+- Server — https://github.com/Mith9n/yesly-server-site
+- Client — https://github.com/Mith9n/yesly-client-site
